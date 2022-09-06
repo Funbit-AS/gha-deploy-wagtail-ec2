@@ -1,0 +1,78 @@
+name: "Deploy to EC2"
+description: "Deploys a Wagtail project to EC2"
+
+inputs:
+ deployment_target:
+    description: "staging or production"
+    required: true
+  project_name:
+    description: "name of project as named in the wagtail folder"
+    required: true
+  image_name:
+    description: ""
+    required: true
+  service_name:
+    description: ""
+    required: true
+  aws_access_key_id:
+    description: ""
+    required: true
+  aws_secret_access_key:
+    description: ""
+    required: true
+  aws_region:
+    description: ""
+    required: true
+  #uses_tailwind:
+    #description: "Does the project use Tailwind"
+    #required: True
+  #uses_elm:
+    #description: "Does the project use Elm"
+    #required: True
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ inputs.aws_access_key_id }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+        aws-region: ${{ inputs.aws_region }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push to Amazon ECR
+      uses: docker/build-push-action@v2
+      with:
+        context: wagtail/${{ env.project_name }}
+        file: wagtail/${{ env.project_name }}/docker/${{ env.image_name }}/Dockerfile
+        tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.project_name }}-${{ env.image_name }}:${{ env.deployment_target }}
+        push: true
+        cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.project_name }}-${{ env.image_name }}:${{ env.deployment_target }}
+        cache-to: type=inline
+      
+    - name: Get EC2 Server Instance ID
+      uses: "marvinpinto/action-inject-ssm-secrets@latest"
+      with:deployment_target
+        ssm_parameter: "/${{ env.project_name }}/${{ env.deployment_target }}/EC2_INSTANCE_ID"
+        env_variable_name: "EC2_INSTANCE_ID"
+      
+    - name: AWS SSM Send-Command to pull and restart docker
+      uses: peterkimzz/aws-ssm-send-command@master
+      id: ssm
+      with:
+        aws-region: ${{ secrets.aws_region }}
+        aws-access-key-id: ${{ secrets.aws_access_key_id }}
+        aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+        instance-ids: ${{ env.EC2_INSTANCE_ID }}
+
+        working-directory: /home/ec2-user
+        # Pull new image, restart containers (as necessary) and migrate db
+        command: su ec2-user -c 'docker-compose pull && docker-compose up -d && docker-compose exec -d ${{ env.SERVICE_NAME }} python manage.py migrate'
+        comment: Executed by Github Actions - ${{ env.project_name }} (${{ env.DEPLOYMENT_TARGET }})
