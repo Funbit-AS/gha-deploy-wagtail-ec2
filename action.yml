@@ -2,32 +2,33 @@ name: "Deploy to EC2"
 description: "Deploys a Wagtail project to EC2"
 
 inputs:
- deployment-target:
-    description: "staging or production"
-    required: true
-  project-name:
-    description: "name of project as named in the wagtail folder"
-    required: true
-  image-name:
-    description: ""
-    required: true
-  service-name:
-    description: ""
-    required: true
   uses-tailwind:
     description: "Does the project use Tailwind"
     required: True
-  #uses_elm: No good solutions for elm.
+  uses-elm:
+    description: "Does the project use Elm"
+    required: True
+  elm-folders:
+    description: "The names of the folders that contains an elm folder seperated by spaces. wagtail/proejectname/{{ folder_that_contains_elm }}/elm."
+    required: false
+    default: ""
+    
 
 runs:
   using: "composite"
   steps:
     - name: Setup Node
-      if: ${{ uses-tailwind }}
+      if: ${{ uses-tailwind || uses-elm }}
       uses: actions/setup-node@v3
       with:
         node-version: '16'
-          
+    
+    - name:  Install and Compile Production Elm
+      if: ${{ uses-elm }}
+      #uses: Funbit-AS/gha-compile-elm@TODO
+      with:
+        elm-paths: ${{ elm-folders }}
+
     - name: Tailwind - Install and Compile Production
       if: ${{ uses-tailwind }}
       run: |
