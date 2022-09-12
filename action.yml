@@ -28,6 +28,9 @@ runs:
       #uses: Funbit-AS/gha-compile-elm@TODO
       with:
         elm-paths: ${{ elm-folders }}
+      env:
+        PROJECT_NAME: ${{ env.PROJECT_NAME }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
 
     - name: Tailwind - Install and Compile Production
       if: ${{ uses-tailwind }}
