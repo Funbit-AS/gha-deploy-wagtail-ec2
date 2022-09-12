@@ -5,40 +5,36 @@ inputs:
   uses-tailwind:
     description: "Does the project use Tailwind"
     required: True
-  uses-elm:
-    description: "Does the project use Elm"
+  elm-paths:
+    description: "All paths to elm files ( '/wagtail/{{ project-name }}/{{ folder }}/elm' ) in project seperated by whitespace"
     required: True
+    default: ""
   elm-version:
     description: "The version of Elm to be used to compile the elm files in the project"
     required: false
-    default: 0.19.1
-  elm-paths:
-    description: "All paths to elm files ( '/wagtail/{{ project-name }}/{{ folder }}/elm' ) in project seperated by whitespace"
-    required: false
-    default: ""
-    
+    default: 0.19.1    
 
 runs:
   using: "composite"
   steps:
     - name: Setup Node
-      if: ${{ uses-tailwind || uses-elm }}
+      if: uses-tailwind || uses-paths!=''
       uses: actions/setup-node@v3
       with:
         node-version: '16'
     
     - name:  Install and Compile Production Elm
-      if: ${{ uses-elm }}
-      #uses: Funbit-AS/gha-compile-elm@TODO
+      if: uses-elm
+      uses: Funbit-AS/gha-compile-elm@v1
       with:
-        elm-paths: ${{ elm-folders }}
-        elm-version: ${{ elm-version }}
+        elm-paths: ${{ input.elm-folders }}
+        elm-version: ${{ input.elm-version }}
       env:
         PROJECT_NAME: ${{ env.PROJECT_NAME }}
         GITHUB_WORKSPACE: ${{ github.workspace }}
 
     - name: Tailwind - Install and Compile Production
-      if: ${{ uses-tailwind }}
+      if: uses-tailwind
       run: |
         cd wagtail/${{ input.project-name }}/theme/static_src
         npm install
