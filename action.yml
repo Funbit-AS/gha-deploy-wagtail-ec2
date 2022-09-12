@@ -2,6 +2,18 @@ name: "Deploy to EC2"
 description: "Deploys a Wagtail project to EC2"
 
 inputs:
+  project-name:
+    description: "Name of project"
+    required: True
+  deployment-target:
+    description: "production or staging"
+    required: True
+  image-name:
+    description: ""
+    required: True
+  service-name:
+    description: ""
+    required: True
   uses-tailwind:
     description: "Does the project use Tailwind"
     required: True
@@ -27,10 +39,9 @@ runs:
       if: elm-paths!=''
       uses: Funbit-AS/gha-compile-elm@v1
       with:
-        elm-paths: ${{ input.elm-folders }}
+        elm-paths: ${{ input.elm-paths }}
         elm-version: ${{ input.elm-version }}
       env:
-        PROJECT_NAME: ${{ env.PROJECT_NAME }}
         GITHUB_WORKSPACE: ${{ github.workspace }}
 
     - name: Tailwind - Install and Compile Production
@@ -77,7 +88,7 @@ runs:
         aws-region: ${{ secrets.aws_region }}
         aws-access-key-id: ${{ secrets.aws_access_key_id }}
         aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
-        instance-ids: ${{ input.EC2_INSTANCE_ID }}
+        instance-ids: ${{ env.EC2_INSTANCE_ID }}
 
         working-directory: /home/ec2-user
         # Pull new image, restart containers (as necessary) and migrate db
