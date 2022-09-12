@@ -24,7 +24,7 @@ runs:
         node-version: '16'
     
     - name:  Install and Compile Production Elm
-      if: uses-elm
+      if: uses-paths!=''
       uses: Funbit-AS/gha-compile-elm@v1
       with:
         elm-paths: ${{ input.elm-folders }}
