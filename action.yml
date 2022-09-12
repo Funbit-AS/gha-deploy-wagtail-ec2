@@ -18,13 +18,13 @@ runs:
   using: "composite"
   steps:
     - name: Setup Node
-      if: uses-tailwind || uses-paths!=''
+      if: uses-tailwind || elm-paths!=''
       uses: actions/setup-node@v3
       with:
         node-version: '16'
     
     - name:  Install and Compile Production Elm
-      if: uses-paths!=''
+      if: elm-paths!=''
       uses: Funbit-AS/gha-compile-elm@v1
       with:
         elm-paths: ${{ input.elm-folders }}
