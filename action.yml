@@ -8,8 +8,12 @@ inputs:
   uses-elm:
     description: "Does the project use Elm"
     required: True
-  elm-folders:
-    description: "The names of the folders that contains an elm folder seperated by spaces. wagtail/proejectname/{{ folder_that_contains_elm }}/elm."
+  elm-version:
+    description: "The version of Elm to be used to compile the elm files in the project"
+    required: false
+    default: 0.19.1
+  elm-paths:
+    description: "All paths to elm files ( '/wagtail/{{ project-name }}/{{ folder }}/elm' ) in project seperated by whitespace"
     required: false
     default: ""
     
@@ -28,6 +32,7 @@ runs:
       #uses: Funbit-AS/gha-compile-elm@TODO
       with:
         elm-paths: ${{ elm-folders }}
+        elm-version: ${{ elm-version }}
       env:
         PROJECT_NAME: ${{ env.PROJECT_NAME }}
         GITHUB_WORKSPACE: ${{ github.workspace }}
