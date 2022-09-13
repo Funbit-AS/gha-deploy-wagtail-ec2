@@ -14,6 +14,15 @@ inputs:
   service-name:
     description: ""
     required: True
+  aws-access-key-id:
+    description: ""
+    required: True
+  aws-secret-access-key:
+    description: ""
+    required: True
+  aws-region:
+    description: ""
+    required: True
   uses-tailwind:
     description: "Does the project use Tailwind"
     required: True
@@ -39,17 +48,18 @@ runs:
       if: elm-paths!=''
       uses: Funbit-AS/gha-compile-elm@v1
       with:
-        elm-paths: ${{ input.elm-paths }}
-        elm-version: ${{ input.elm-version }}
+        elm-paths: ${{ inputs.elm-paths }}
+        elm-version: ${{ inputs.elm-version }}
       env:
         GITHUB_WORKSPACE: ${{ github.workspace }}
 
     - name: Tailwind - Install and Compile Production
       if: uses-tailwind
       run: |
-        cd wagtail/${{ input.project-name }}/theme/static_src
+        cd wagtail/${{ inputs.project-name }}/theme/static_src
         npm install
         npx tailwindcss --postcss -i ./src/styles.css -o ../static/css/dist/styles.css --minify
+      shell: bash
     
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v1
@@ -57,9 +67,9 @@ runs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws-region }}
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -68,29 +78,29 @@ runs:
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v2
       with:
-        context: wagtail/${{ input.project-name }}
-        file: wagtail/${{ input.project-name }}/docker/${{ input.image-name }}/Dockerfile
-        tags: ${{ steps.login-ecr.outputs.registry }}/${{ input.project-name }}-${{ input.image-name }}:${{ input.deployment-target }}
+        context: wagtail/${{ inputs.project-name }}
+        file: wagtail/${{ inputs.project-name }}/docker/${{ inputs.image-name }}/Dockerfile
+        tags: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
         push: true
-        cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ input.project-name }}-${{ input.image-name }}:${{ input.deployment-target }}
+        cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
         cache-to: type=inline
       
     - name: Get EC2 Server Instance ID
       uses: "marvinpinto/action-inject-ssm-secrets@latest"
       with:deployment-target
-        ssm_parameter: "/${{ input.project-name }}/${{ input.deployment-target }}/EC2_INSTANCE_ID"
+        ssm_parameter: "/${{ inputs.project-name }}/${{ inputs.deployment-target }}/EC2_INSTANCE_ID"
         env_variable_name: "EC2_INSTANCE_ID"
       
     - name: AWS SSM Send-Command to pull and restart docker
       uses: peterkimzz/aws-ssm-send-command@master
       id: ssm
       with:
-        aws-region: ${{ secrets.aws_region }}
-        aws-access-key-id: ${{ secrets.aws_access_key_id }}
-        aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+        aws-region: ${{ inputs.aws_region }}
+        aws-access-key-id: ${{ inputs.aws_access_key_id }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
         instance-ids: ${{ env.EC2_INSTANCE_ID }}
 
         working-directory: /home/ec2-user
         # Pull new image, restart containers (as necessary) and migrate db
-        command: su ec2-user -c 'docker-compose pull && docker-compose up -d && docker-compose exec -d ${{ input.service-name }} python manage.py migrate'
-        comment: Executed by Github Actions - ${{ input.project-name }} (${{ input.deployment-target }})
+        command: su ec2-user -c 'docker-compose pull && docker-compose up -d && docker-compose exec -d ${{ inputs.service-name }} python manage.py migrate'
+        comment: Executed by Github Actions - ${{ inputs.project-name }} (${{ inputs.deployment-target }})
