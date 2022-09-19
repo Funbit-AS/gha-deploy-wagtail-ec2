@@ -26,11 +26,12 @@ inputs:
     default: eu-central-1
   uses-tailwind:
     description: "Does the project use Tailwind"
-    required: True
+    required: false
+    default: false
   elm-paths:
     description: "All paths to elm files ( '/wagtail/{{ project-name }}/{{ folder }}/elm' ) in project seperated by whitespace"
-    required: True
-    default: ""
+    required: false
+    default: ''
   elm-version:
     description: "The version of Elm to be used to compile the elm files in the project"
     required: false
