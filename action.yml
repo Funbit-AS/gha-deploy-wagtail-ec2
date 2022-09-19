@@ -1,0 +1,106 @@
+name: "Deploy to EC2"
+description: "Deploys a Wagtail project to EC2"
+
+inputs:
+  project-name:
+    description: "Name of project"
+    required: True
+  deployment-target:
+    description: "production or staging"
+    required: True
+  image-name:
+    description: ""
+    required: True
+  service-name:
+    description: ""
+    required: True
+  aws-access-key-id:
+    description: ""
+    required: True
+  aws-secret-access-key:
+    description: ""
+    required: True
+  aws-region:
+    description: ""
+    required: False
+    default: eu-central-1
+  uses-tailwind:
+    description: "Does the project use Tailwind"
+    required: True
+  elm-paths:
+    description: "All paths to elm files ( '/wagtail/{{ project-name }}/{{ folder }}/elm' ) in project seperated by whitespace"
+    required: True
+    default: ""
+  elm-version:
+    description: "The version of Elm to be used to compile the elm files in the project"
+    required: false
+    default: 0.19.1    
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      if: uses-tailwind || elm-paths!=''
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+    
+    - name:  Install and Compile Production Elm
+      if: elm-paths!=''
+      uses: Funbit-AS/gha-compile-elm@v1
+      with:
+        github-workspace: ${{ github.workspace }}
+        elm-paths: ${{ inputs.elm-paths }}
+        elm-version: ${{ inputs.elm-version }}
+
+    - name: Tailwind - Install and Compile Production
+      if: uses-tailwind
+      run: |
+        cd wagtail/${{ inputs.project-name }}/theme/static_src
+        npm install
+        npx tailwindcss --postcss -i ./src/styles.css -o ../static/css/dist/styles.css --minify
+      shell: bash
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws-region }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push to Amazon ECR
+      uses: docker/build-push-action@v2
+      with:
+        context: wagtail/${{ inputs.project-name }}
+        file: wagtail/${{ inputs.project-name }}/docker/${{ inputs.image-name }}/Dockerfile
+        tags: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
+        push: true
+        cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
+        cache-to: type=inline
+      
+    - name: Get EC2 Server Instance ID
+      uses: "marvinpinto/action-inject-ssm-secrets@latest"
+      with:deployment-target
+        ssm_parameter: "/${{ inputs.project-name }}/${{ inputs.deployment-target }}/EC2_INSTANCE_ID"
+        env_variable_name: "EC2_INSTANCE_ID"
+      
+    - name: AWS SSM Send-Command to pull and restart docker
+      uses: peterkimzz/aws-ssm-send-command@master
+      id: ssm
+      with:
+        aws-region: ${{ inputs.aws_region }}
+        aws-access-key-id: ${{ inputs.aws_access_key_id }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+        instance-ids: ${{ env.EC2_INSTANCE_ID }}
+
+        working-directory: /home/ec2-user
+        # Pull new image, restart containers (as necessary) and migrate db
+        command: su ec2-user -c 'docker-compose pull && docker-compose up -d && docker-compose exec -d ${{ inputs.service-name }} python manage.py migrate'
+        comment: Executed by Github Actions - ${{ inputs.project-name }} (${{ inputs.deployment-target }})
