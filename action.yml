@@ -87,7 +87,7 @@ runs:
       
     - name: Get EC2 Server Instance ID
       uses: "marvinpinto/action-inject-ssm-secrets@latest"
-      with: deployment-target
+      with:
         ssm_parameter: "/${{ inputs.project-name }}/${{ inputs.deployment-target }}/EC2_INSTANCE_ID"
         env_variable_name: "EC2_INSTANCE_ID"
       
