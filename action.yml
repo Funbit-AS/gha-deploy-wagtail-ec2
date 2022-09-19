@@ -22,7 +22,8 @@ inputs:
     required: True
   aws-region:
     description: ""
-    required: True
+    required: False
+    default: eu-central-1
   uses-tailwind:
     description: "Does the project use Tailwind"
     required: True
