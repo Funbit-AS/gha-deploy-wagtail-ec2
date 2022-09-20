@@ -96,9 +96,9 @@ runs:
       uses: peterkimzz/aws-ssm-send-command@master
       id: ssm
       with:
-        aws-region: ${{ inputs.aws_region }}
-        aws-access-key-id: ${{ inputs.aws_access_key_id }}
-        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+        aws-region: ${{ inputs.aws-region }}
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         instance-ids: ${{ env.EC2_INSTANCE_ID }}
 
         working-directory: /home/ec2-user
