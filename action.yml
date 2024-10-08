@@ -35,7 +35,12 @@ inputs:
   elm-version:
     description: "The version of Elm to be used to compile the elm files in the project"
     required: false
-    default: 0.19.1    
+    default: 0.19.1
+  ecr-build-context-path:
+    description: "The context path for the 'build and push to ecr action'. Will use inputs.project-name if no input is given"
+    required: false
+    default: ""
+
 
 runs:
   using: "composite"
@@ -75,6 +80,20 @@ runs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
+
+    - name: "Set ECR build context path"
+      run: |
+        project_path="${{ inputs.project-name }}"
+        context_path="${{ inputs.ecr-build-context-path }}"
+
+        # If ecr-build-context-path is not provided, set it to the value of project-name
+        if [ -z "$context_path" ]; then
+          context_path="$project_path"
+        fi
+
+        # Set output for ecr-build-context-path to be used in other actions
+        echo "::set-output name=ecr-build-context-path::$context_path"
+      shell: bash
 
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v3
