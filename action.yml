@@ -98,7 +98,7 @@ runs:
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v3
       with:
-        context: wagtail/${{ inputs.project-name }}
+        context: wagtail/${{ inputs.ecr-build-context-path }}
         file: wagtail/${{ inputs.project-name }}/docker/${{ inputs.image-name }}/Dockerfile
         tags: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
         push: true
