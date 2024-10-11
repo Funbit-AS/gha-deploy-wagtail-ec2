@@ -82,7 +82,7 @@ runs:
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Set default value to ecr-build-context
-      id: "set-ecr-build-context"
+      id: set-ecr-build-context
       run: |
         project_name="${{ inputs.project-name }}"
         context_input="${{ inputs.ecr-build-context }}"
