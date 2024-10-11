@@ -93,17 +93,17 @@ runs:
         fi
 
         # Set output for ecr-build-context to be used in other actions
-        echo "::set-output name=ecr-build-context::$context_input"
+        echo "ecr-build-context=$context_input" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Echo context-path output
-      run: echo "Context Path is ${{ steps.set-ecr-build-context.ecr-build-context }}"
+      run: echo "Context Path is ${{ steps.set-ecr-build-context.outputs.ecr-build-context }}"
       shell: bash
 
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v3
       with:
-        context: ${{ steps.set-ecr-build-context.ecr-build-context }}
+        context: ${{ steps.set-ecr-build-context.outputs.ecr-build-context }}
         file: wagtail/${{ inputs.project-name }}/docker/${{ inputs.image-name }}/Dockerfile
         tags: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
         push: true
