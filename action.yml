@@ -98,6 +98,7 @@ runs:
 
     - name: Echo context-path output
       run: echo "Context Path is ${{ steps.set-ecr-build-context.context-path }}"
+      shell: bash
 
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v3
