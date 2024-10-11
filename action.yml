@@ -89,7 +89,7 @@ runs:
 
         # If ecr-build-context is not provided, set it to the value of project-name
         if [ -z "$context_input" ]; then
-          context_input="$project_name"
+          context_input="wagtail/$project_name"
         fi
 
         # Set output for ecr-build-context to be used in other actions
@@ -103,7 +103,7 @@ runs:
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v3
       with:
-        context: wagtail/${{ steps.set-ecr-build-context.outputs.ecr-build-context }}
+        context: ${{ steps.set-ecr-build-context.outputs.ecr-build-context }}
         file: wagtail/${{ inputs.project-name }}/docker/${{ inputs.image-name }}/Dockerfile
         tags: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
         push: true
