@@ -81,6 +81,7 @@ runs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
+    - name: Set default value to ecr-build-context
     - id: "set-ecr-build-context"
       run: |
         project_name="${{ inputs.project-name }}"
@@ -94,6 +95,9 @@ runs:
         # Set output for ecr-build-context to be used in other actions
         echo "::set-output name=ecr-build-context::$context_input"
       shell: bash
+
+    - name: Echo context-path output
+      run: echo "Context Path is ${{ steps.set-ecr-build-context.context-path }}"
 
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v3
