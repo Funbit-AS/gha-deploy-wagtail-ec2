@@ -81,7 +81,7 @@ runs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: "Set ECR build context path"
+    - id: "set-ecr-build-context"
       run: |
         project_name="${{ inputs.project-name }}"
         context_input="${{ inputs.ecr-build-context }}"
@@ -98,7 +98,7 @@ runs:
     - name: Build and push to Amazon ECR
       uses: docker/build-push-action@v3
       with:
-        context: ${{ inputs.ecr-build-context }}
+        context: ${{ steps.set-ecr-build-context.ecr-build-context }}
         file: wagtail/${{ inputs.project-name }}/docker/${{ inputs.image-name }}/Dockerfile
         tags: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.project-name }}-${{ inputs.image-name }}:${{ inputs.deployment-target }}
         push: true
