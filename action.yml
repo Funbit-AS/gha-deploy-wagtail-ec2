@@ -97,7 +97,7 @@ runs:
       shell: bash
 
     - name: Echo context-path output
-      run: echo "Context Path is ${{ steps.set-ecr-build-context.context-path }}"
+      run: echo "Context Path is ${{ steps.set-ecr-build-context.ecr-build-context }}"
       shell: bash
 
     - name: Build and push to Amazon ECR
